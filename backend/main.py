@@ -1,6 +1,5 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-import whisper
 import os
 import uuid
 
@@ -21,13 +20,24 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ── Load Whisper model once at startup (not per-request) ──────────────────────
-# "base" model  ~ 150 MB RAM — good accuracy, fast inference, fits Render free tier
-# Switch to "small" (~ 500 MB) for even better accuracy if you upgrade to a paid tier
-MODEL_SIZE = os.environ.get("WHISPER_MODEL", "base")
-print(f"[Whisper] Loading model: {MODEL_SIZE} ...")
-model = whisper.load_model(MODEL_SIZE)
-print(f"[Whisper] Model ready.")
+# ── Transcription engine setup ─────────────────────────────────────────────────
+# If GROQ_API_KEY is set (production on Render), use Groq's free Whisper API
+# — transcribes in ~2 seconds regardless of hardware.
+# If no API key is set (local dev), fall back to local Whisper model.
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+
+if GROQ_API_KEY:
+    from groq import Groq
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    local_model = None
+    print("[Whisper] Using Groq cloud API for transcription (fast mode).")
+else:
+    import whisper
+    MODEL_SIZE = os.environ.get("WHISPER_MODEL", "base")
+    print(f"[Whisper] No GROQ_API_KEY found. Loading local model: {MODEL_SIZE} ...")
+    local_model = whisper.load_model(MODEL_SIZE)
+    groq_client = None
+    print(f"[Whisper] Local model ready.")
 
 os.makedirs("temp", exist_ok=True)
 
@@ -57,11 +67,21 @@ async def transcribe_audio(file: UploadFile = File(...)):
         with open(temp_filename, "wb") as f:
             f.write(contents)
 
-        # Transcribe with Whisper — no external API call, runs fully on-server
-        result = model.transcribe(temp_filename, fp16=False)
-
-        text = result.get("text", "").strip()
-        language = result.get("language", "unknown")
+        if groq_client:
+            # ── Fast path: Groq cloud API (~2 seconds) ──────────────────────
+            with open(temp_filename, "rb") as audio_file:
+                groq_result = groq_client.audio.transcriptions.create(
+                    file=(os.path.basename(temp_filename), audio_file.read()),
+                    model="whisper-large-v3-turbo",
+                    response_format="verbose_json",
+                )
+            text = (groq_result.text or "").strip()
+            language = getattr(groq_result, "language", "unknown") or "unknown"
+        else:
+            # ── Local path: on-device Whisper (local dev) ────────────────────
+            result = local_model.transcribe(temp_filename, fp16=False)
+            text = result.get("text", "").strip()
+            language = result.get("language", "unknown")
 
         if not text:
             return {"text": "", "language": language, "status": "silent"}

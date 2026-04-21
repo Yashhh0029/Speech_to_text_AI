@@ -5,11 +5,13 @@ import gsap from 'gsap';
 const ApplicationArea = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [processingTime, setProcessingTime] = useState(0);
   const [transcription, setTranscription] = useState('');
   const [detectedLanguage, setDetectedLanguage] = useState(null);
   const [errorStatus, setErrorStatus] = useState(null);
   const [copied, setCopied] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [isWakingUp, setIsWakingUp] = useState(false);
   
   const timerRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -93,6 +95,14 @@ const ApplicationArea = () => {
 
   const uploadAudio = async (file) => {
     setIsProcessing(true);
+    setIsWakingUp(false);
+    setErrorStatus(null);
+    
+    // If request takes longer than 5 seconds, Render is likely waking up
+    const wakeUpTimer = setTimeout(() => {
+        setIsWakingUp(true);
+    }, 5000);
+
     const formData = new FormData();
     formData.append('file', file);
 
@@ -104,6 +114,9 @@ const ApplicationArea = () => {
         body: formData,
       });
       
+      clearTimeout(wakeUpTimer);
+      setIsWakingUp(false);
+
       const data = await response.json();
       
       if (!response.ok) throw new Error(data.detail || 'Failed to process audio');
@@ -115,8 +128,19 @@ const ApplicationArea = () => {
           setDetectedLanguage(data.language || null);
       }
     } catch (err) {
+      clearTimeout(wakeUpTimer);
+      setIsWakingUp(false);
       console.error(err);
-      setErrorStatus(err.message || 'An error occurred during transcription.');
+      
+      if (err.message === 'Failed to fetch' || err.message.includes('Network Error')) {
+          if (API_URL.includes('127.0.0.1') || API_URL.includes('localhost')) {
+              setErrorStatus('Configuration Error: Expected a live backend but VITE_API_URL is pointing to localhost. Please set VITE_API_URL completely in your Vercel project settings and trigger a new deployment.');
+          } else {
+              setErrorStatus(`Network Error: Ensure your Render backend (${API_URL}) is live and allows cross-origin requests.`);
+          }
+      } else {
+          setErrorStatus(err.message || 'An error occurred during transcription.');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -160,9 +184,14 @@ const ApplicationArea = () => {
             <div style={{ flex: '1 1 300px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '2rem', background: 'rgba(0,0,0,0.2)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
                 
                 {isProcessing ? (
-                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
                          <Loader2 size={48} style={{ color: 'var(--primary)', animation: 'spin 1s linear infinite', marginBottom: '1rem' }} />
                          <span style={{ fontWeight: 500, color: 'var(--text-muted)' }}>Extracting intelligence...</span>
+                         {isWakingUp && (
+                             <span style={{ fontSize: '0.85rem', color: 'var(--accent)', marginTop: '0.75rem', maxWidth: '250px' }}>
+                                 Server is waking up from sleep mode<br/>(This can take up to 50 seconds)
+                             </span>
+                         )}
                      </div>
                 ) : (
                     <>
