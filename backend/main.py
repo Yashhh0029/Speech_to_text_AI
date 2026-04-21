@@ -24,6 +24,7 @@ app.add_middleware(
 # If GROQ_API_KEY is set (production on Render), use Groq's free Whisper API
 # — transcribes in ~2 seconds regardless of hardware.
 # If no API key is set (local dev), fall back to local Whisper model.
+MODEL_SIZE = os.environ.get("WHISPER_MODEL", "base")
 GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
 
 if GROQ_API_KEY:
@@ -32,12 +33,15 @@ if GROQ_API_KEY:
     local_model = None
     print("[Whisper] Using Groq cloud API for transcription (fast mode).")
 else:
-    import whisper
-    MODEL_SIZE = os.environ.get("WHISPER_MODEL", "base")
-    print(f"[Whisper] No GROQ_API_KEY found. Loading local model: {MODEL_SIZE} ...")
-    local_model = whisper.load_model(MODEL_SIZE)
     groq_client = None
-    print(f"[Whisper] Local model ready.")
+    if os.environ.get("RENDER"):
+        print(f"[Whisper] RENDER detected without GROQ_API_KEY. Skipping local model load to prevent deployment timeouts.")
+        local_model = None
+    else:
+        import whisper
+        print(f"[Whisper] No GROQ_API_KEY found. Loading local model: {MODEL_SIZE} ...")
+        local_model = whisper.load_model(MODEL_SIZE)
+        print(f"[Whisper] Local model ready.")
 
 os.makedirs("temp", exist_ok=True)
 
