@@ -59,6 +59,13 @@ async def transcribe_audio(file: UploadFile = File(...)):
     """
     temp_filename = None
     try:
+        # Prevent 100-second timeouts on Render free tier
+        if not groq_client and os.environ.get("RENDER"):
+            raise HTTPException(
+                status_code=503, 
+                detail="Missing GROQ_API_KEY in Render settings. Local AI transcription requires too much CPU and will exceed Render's free tier timeout. Please add your Groq API Key."
+            )
+
         contents = await file.read()
 
         # Persist the upload to a temp file — Whisper needs a file path
