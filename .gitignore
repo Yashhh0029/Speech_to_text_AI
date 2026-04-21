@@ -1,0 +1,50 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+backend/venv/
+backend/__pycache__/
+backend/temp/
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+*.egg-info/
+.pytest_cache/
+dist/
+build/
+
+# ── Node / Frontend ───────────────────────────────────────────────────────────
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# ── Environment Variables (NEVER commit secrets) ──────────────────────────────
+.env
+.env.local
+.env.*.local
+# Keep .env.example — it's a safe template with no real values
+!.env.example
+
+# ── ML Model Weight Files (large binaries) ───────────────────────────────────
+# Whisper downloads its weights at runtime to ~/.cache/whisper — no need to commit
+# If you ever add custom model files, use Git LFS for files > 100MB
+*.pt
+*.pth
+*.bin
+*.onnx
+*.pkl
+*.h5
+*.safetensors
+*.gguf
+models/
+
+# ── Temporary / Editor ────────────────────────────────────────────────────────
+*.log
+*.tmp
+*.swp
+.idea/
+.vscode/
+*.code-workspace
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
