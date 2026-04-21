@@ -3,3 +3,4 @@ uvicorn[standard]
 openai-whisper
 pydub
 python-multipart
+groq
