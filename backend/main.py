@@ -94,6 +94,27 @@ async def transcribe_audio(file: UploadFile = File(...)):
                 )
             text = (groq_result.text or "").strip()
             language = getattr(groq_result, "language", "unknown") or "unknown"
+            
+            # --- AI Grammar & Context Correction Filter ---
+            # Whisper defaults to masculine verbs in Indic languages. We use LLaMA to fix it.
+            try:
+                if text and language.lower() not in ["english", "en", "unknown"]:
+                    fix_prompt = f"You are a native linguist reviewing a {language} audio transcript. Fix any gender-agreement or logical errors (e.g. if the speaker states a female name like Shreya, ensure verbs are feminine like 'म्हणते' instead of 'म्हणतो'). Do NOT add entirely new words or explain anything. Respond ONLY with the corrected transcript."
+                    correction = groq_client.chat.completions.create(
+                        model="llama-3.1-8b-instant",
+                        messages=[
+                            {"role": "system", "content": fix_prompt},
+                            {"role": "user", "content": text}
+                        ],
+                        temperature=0.1,
+                    )
+                    corrected_text = correction.choices[0].message.content.strip()
+                    if corrected_text and len(corrected_text) > 0:
+                        text = corrected_text
+            except Exception as e:
+                print(f"[Grammar Filter Error] {str(e)}")
+                # Continue with original text if correction fails
+                pass
         else:
             # ── Local path: on-device Whisper (local dev) ────────────────────
             result = local_model.transcribe(temp_filename, fp16=False)
@@ -129,7 +150,7 @@ async def translate_text(req: TranslationRequest):
     try:
         if groq_client:
             # Fast path: Groq LLaMA text inferencing
-            system_prompt = f"You are a highly accurate translation engine. Translate the following text into {req.target_language}. Respond ONLY with the translated text, preserving the tone and punctuation. Do not add any conversational filler or introductions."
+            system_prompt = f"You are a highly accurate translation engine. Translate the following text into {req.target_language} with flawless grammar. IMPORTANT: Strictly ensure gender agreement based on the speaker's name or context (e.g., if the user has a female name, use feminine verb conjugations like 'म्हणते' instead of the masculine default 'म्हणतो'). Respond ONLY with the translated text, preserving tone and punctuation without adding conversational filler."
             completion = groq_client.chat.completions.create(
                 model="llama-3.1-8b-instant",
                 messages=[
