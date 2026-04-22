@@ -89,7 +89,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
             with open(temp_filename, "rb") as audio_file:
                 groq_result = groq_client.audio.transcriptions.create(
                     file=(os.path.basename(temp_filename), audio_file.read()),
-                    model="whisper-large-v3-turbo",
+                    model="whisper-large-v3",
                     response_format="verbose_json",
                 )
             text = (groq_result.text or "").strip()
@@ -101,7 +101,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
                 if text and language.lower() not in ["english", "en", "unknown"]:
                     fix_prompt = f"You are a native linguist reviewing a {language} audio transcript. Fix any gender-agreement or logical errors (e.g. if the speaker states a female name like Shreya, ensure verbs are feminine like 'म्हणते' instead of 'म्हणतो'). Do NOT add entirely new words or explain anything. Respond ONLY with the corrected transcript."
                     correction = groq_client.chat.completions.create(
-                        model="llama-3.1-8b-instant",
+                        model="llama-3.3-70b-versatile",
                         messages=[
                             {"role": "system", "content": fix_prompt},
                             {"role": "user", "content": text}
@@ -152,7 +152,7 @@ async def translate_text(req: TranslationRequest):
             # Fast path: Groq LLaMA text inferencing
             system_prompt = f"You are a highly accurate translation engine. Translate the following text into {req.target_language} with flawless grammar. IMPORTANT: Strictly ensure gender agreement based on the speaker's name or context (e.g., if the user has a female name, use feminine verb conjugations like 'म्हणते' instead of the masculine default 'म्हणतो'). Respond ONLY with the translated text, preserving tone and punctuation without adding conversational filler."
             completion = groq_client.chat.completions.create(
-                model="llama-3.1-8b-instant",
+                model="llama-3.3-70b-versatile",
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": req.text}
