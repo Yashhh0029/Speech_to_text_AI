@@ -99,7 +99,7 @@ async def transcribe_audio(file: UploadFile = File(...)):
             # Whisper defaults to masculine verbs in Indic languages. We use LLaMA to fix it.
             try:
                 if text and language.lower() not in ["english", "en", "unknown"]:
-                    fix_prompt = f"You are a native linguist reviewing a {language} audio transcript. Fix any gender-agreement or logical errors (e.g. if the speaker states a female name like Shreya, ensure verbs are feminine like 'म्हणते' instead of 'म्हणतो'). Do NOT add entirely new words or explain anything. Respond ONLY with the corrected transcript."
+                    fix_prompt = f"You are a native linguist reviewing a {language} audio transcript. Fix any gender-agreement or logical errors (apply appropriate feminine or masculine verb conjugations according to the grammatical rules of {language} based on the speaker's name or context). Do NOT translate it to another language. Do NOT add entirely new words or explain anything. Respond ONLY with the strictly corrected transcript in {language}."
                     correction = groq_client.chat.completions.create(
                         model="llama-3.3-70b-versatile",
                         messages=[
@@ -150,7 +150,7 @@ async def translate_text(req: TranslationRequest):
     try:
         if groq_client:
             # Fast path: Groq LLaMA text inferencing
-            system_prompt = f"You are a highly accurate translation engine. Translate the following text into {req.target_language} with flawless grammar. IMPORTANT: Strictly ensure gender agreement based on the speaker's name or context (e.g., if the user has a female name, use feminine verb conjugations like 'म्हणते' instead of the masculine default 'म्हणतो'). Respond ONLY with the translated text, preserving tone and punctuation without adding conversational filler."
+            system_prompt = f"You are a highly accurate translation engine. Translate the following text into {req.target_language} with flawless grammar. IMPORTANT: Strictly ensure gender agreement based on the speaker's name or context (apply appropriate feminine or masculine verb conjugations according to the grammatical rules of {req.target_language}). Respond ONLY with the translated text in {req.target_language}, preserving tone and punctuation without adding conversational filler."
             completion = groq_client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=[

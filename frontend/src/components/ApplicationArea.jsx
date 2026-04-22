@@ -313,7 +313,7 @@ const ApplicationArea = () => {
                                 </button>
                                 
                                 {showDropdown && (
-                                    <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', background: 'rgba(15, 15, 25, 0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.5rem', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }} className="lang-dropdown">
+                                    <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', background: 'rgba(15, 15, 25, 0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.5rem', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px', maxHeight: '200px', overflowY: 'auto', overscrollBehavior: 'contain', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }} className="lang-dropdown" data-lenis-prevent="true" onWheel={(e) => e.stopPropagation()}>
                                         {['ENGLISH', 'HINDI', 'TAMIL', 'MARATHI', 'SPANISH', 'FRENCH', 'GERMAN', 'CHINESE', 'ARABIC', 'JAPANESE'].map(lang => (
                                             <button 
                                                 key={lang}
