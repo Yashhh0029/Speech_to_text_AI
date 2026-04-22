@@ -12,7 +12,8 @@ Nexus Speech AI is a **next-generation transcription platform** engineered at th
 
 Unlike traditional dictation apps, Nexus:
 - Understands context, silence, and over **90+ global languages**.
-- Processes audio using OpenAI's state-of-the-art Whisper AI under the hood.
+- Processes audio using OpenAI's state-of-the-art **Whisper-Large-V3** AI under the hood.
+- Features **Real-Time Flawless Translation** via Groq's bleeding-edge **LLaMA 3.3 70B**, ensuring perfect grammar and context synchronization into 10+ languages instantly.
 - Guarantees data privacy by keeping the transcription pipeline fully server-side without relaying audio to big-tech APIs.
 - Features a jaw-dropping glassmorphic interface, powered by hardware-accelerated animations and ultra-smooth scrolling.
 
@@ -27,7 +28,7 @@ This project is built with **production-grade architecture**, designed to seamle
 | Absolute Aesthetics | A glassmorphism-first UI, leveraging GSAP parallax & Lenis smooth scrolling |
 | Local AI Processing | Utilizes OpenAI Whisper locally on the backend for zero-dependency transcription |
 | Zero-Friction Input | Support for live microphone dictation or drag-and-drop file upload |
-| Multi-Lingual Intelligence | Auto-detects the spoken language and tags it dynamically in the UI |
+| Multi-Lingual Intelligence | Auto-detects spoken audio and allows instant 0-latency translations across 10+ languages using LLaMA |
 | Explainable & Exportable | Word counts and one-click exports directly to your clipboard or .txt files |
 | Scalable Architecture | Strict separation of Vite/React frontend and FastAPI/Python backend |
 
@@ -60,10 +61,10 @@ Rendered Live on Dashboard
 - Background noise adjustment formatting.
 - File upload support for legacy formats (MP3, M4A, WAV, OGG, WEBM).
 
-### 🧠 OpenAI Whisper Core
-- Zero cold-start latency — Model is cached into server RAM on startup.
-- Unmatched accuracy using the robust Whisper `base` (or `tiny`/`small`) parameterization.
-- Multi-lingual auto-detection and transcription.
+### 🧠 Whisper Large-v3 & LLaMA 3.3 Core
+- Unleashes the **Whisper-Large-v3** model on Groq for state-of-the-art audio recognition and accent mapping.
+- Bypasses raw API errors dynamically with a **LLaMA 3.3 70B Grammar & Gender Correction Filter**, catching nuanced language morphs logically.
+- Instantaneous Text-to-Text Translation into 10+ languages directly from the front-end dropdown.
 
 ### 🔮 Premium UI / UX
 - Hardware-accelerated GSAP ScrollTriggers.
@@ -112,7 +113,7 @@ Speech-To-Text-AI/
 
 | Category | Technology |
 |--------|------------|
-| Subsystem & ML | Python, OpenAI Whisper, FFmpeg |
+| Subsystem & ML | Python, OpenAI Whisper, Groq LLaMA 3.3, deep-translator, FFmpeg |
 | Backend Server | FastAPI, Uvicorn, Pydub |
 | Frontend Core | React 19, Vite |
 | Styling & UX | Vanilla CSS, Glassmorphism, CSS Variables |
@@ -158,7 +159,6 @@ Nexus is designed as a foundational intelligence pipeline. Future development in
 
 - **Diarization** – Identify *who* is speaking, separating speakers in the transcript.
 - **WebSocket Streaming** – Real-time word-by-word streaming instead of waiting for the recording to finish.
-- **Translation Engine** – Not just transcription, but real-time translation into the user's native language.
 - **LLM Summarization** – Post-processing the transcript automatically through a conversational LLM to extract key action items and meeting minutes.
 
 > *“Nexus isn't just about hearing words.  
