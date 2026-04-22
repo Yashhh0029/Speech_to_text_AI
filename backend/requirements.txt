@@ -4,3 +4,4 @@ openai-whisper
 pydub
 python-multipart
 groq
+deep-translator

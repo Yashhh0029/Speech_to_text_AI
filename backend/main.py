@@ -2,6 +2,12 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import os
 import uuid
+from pydantic import BaseModel
+
+try:
+    from deep_translator import GoogleTranslator
+except ImportError:
+    GoogleTranslator = None
 
 # ── App setup ──────────────────────────────────────────────────────────────────
 app = FastAPI(title="Premium Speech-to-Text API — Powered by Whisper")
@@ -109,4 +115,45 @@ async def transcribe_audio(file: UploadFile = File(...)):
                 os.remove(temp_filename)
         except Exception:
             pass  # Ignore cleanup errors (Windows file locks)
+
+class TranslationRequest(BaseModel):
+    text: str
+    target_language: str
+    source_language: str = "auto"
+
+@app.post("/api/translate")
+async def translate_text(req: TranslationRequest):
+    if not req.text.strip():
+        return {"translated_text": ""}
+        
+    try:
+        if groq_client:
+            # Fast path: Groq LLaMA text inferencing
+            system_prompt = f"You are a highly accurate translation engine. Translate the following text into {req.target_language}. Respond ONLY with the translated text, preserving the tone and punctuation. Do not add any conversational filler or introductions."
+            completion = groq_client.chat.completions.create(
+                model="llama-3.1-8b-instant",
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": req.text}
+                ],
+                temperature=0.3,
+            )
+            translated = completion.choices[0].message.content.strip()
+            return {"translated_text": translated}
+        else:
+            # Local fallback
+            if not GoogleTranslator:
+                raise HTTPException(status_code=500, detail="deep-translator not installed for local fallback.")
+                
+            target_lang_map = {
+                "ENGLISH": "en", "HINDI": "hi", "TAMIL": "ta", "MARATHI": "mr",
+                "SPANISH": "es", "FRENCH": "fr", "GERMAN": "de", "CHINESE": "zh-CN",
+                "ARABIC": "ar", "JAPANESE": "ja"
+            }
+            target_code = target_lang_map.get(req.target_language.upper(), "en")
+            translated = GoogleTranslator(source="auto", target=target_code).translate(req.text)
+            return {"translated_text": translated}
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 

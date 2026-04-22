@@ -12,6 +12,11 @@ const ApplicationArea = () => {
   const [copied, setCopied] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isWakingUp, setIsWakingUp] = useState(false);
+  const [originalText, setOriginalText] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState('');
+  const [isTranslating, setIsTranslating] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [translationCache, setTranslationCache] = useState({});
   
   const timerRef = useRef(null);
   const mediaRecorderRef = useRef(null);
@@ -50,6 +55,9 @@ const ApplicationArea = () => {
   const startRecording = async () => {
     setErrorStatus(null);
     setTranscription('');
+    setOriginalText('');
+    setTranslationCache({});
+    setShowDropdown(false);
     setDetectedLanguage(null);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -83,6 +91,9 @@ const ApplicationArea = () => {
       if (file) {
           setErrorStatus(null);
           setTranscription('');
+          setOriginalText('');
+          setTranslationCache({});
+          setShowDropdown(false);
           uploadAudio(file);
       }
   };
@@ -124,8 +135,12 @@ const ApplicationArea = () => {
       if (!data.text) {
           setErrorStatus("Audio was too quiet or unintelligible. Try again.");
       } else {
+          const langLabel = data.language ? data.language.toUpperCase() : 'UNKNOWN';
           setTranscription(data.text);
-          setDetectedLanguage(data.language || null);
+          setOriginalText(data.text);
+          setDetectedLanguage(langLabel);
+          setSelectedLanguage(langLabel);
+          setTranslationCache({ [langLabel]: data.text });
       }
     } catch (err) {
       clearTimeout(wakeUpTimer);
@@ -141,9 +156,46 @@ const ApplicationArea = () => {
       } else {
           setErrorStatus(err.message || 'An error occurred during transcription.');
       }
-    } finally {
+      } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleLanguageSelect = async (targetLang) => {
+      setSelectedLanguage(targetLang);
+      setShowDropdown(false);
+      
+      if (translationCache[targetLang]) {
+          setTranscription(translationCache[targetLang]);
+          return;
+      }
+      
+      setIsTranslating(true);
+      setErrorStatus(null);
+      const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
+      
+      try {
+          const response = await fetch(`${API_URL}/api/translate`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                  text: originalText,
+                  target_language: targetLang,
+                  source_language: detectedLanguage
+              })
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || 'Translation failed');
+          
+          setTranscription(data.translated_text);
+          setTranslationCache(prev => ({ ...prev, [targetLang]: data.translated_text }));
+      } catch (err) {
+          setErrorStatus(err.message || 'Translation failed.');
+          setSelectedLanguage(detectedLanguage);
+          setTranscription(originalText);
+      } finally {
+          setIsTranslating(false);
+      }
   };
 
   const handleCopy = () => {
@@ -252,9 +304,28 @@ const ApplicationArea = () => {
                     <h3 style={{ fontSize: '1.25rem', fontWeight: 600 }}>Transcription Result</h3>
                     <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                         {detectedLanguage && (
-                            <span style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(99,102,241,0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '999px', border: '1px solid rgba(99,102,241,0.3)' }}>
-                                🌐 {detectedLanguage}
-                            </span>
+                            <div style={{ position: 'relative' }}>
+                                <button 
+                                    onClick={() => setShowDropdown(!showDropdown)}
+                                    style={{ fontSize: '0.75rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', background: 'rgba(99,102,241,0.15)', color: 'var(--primary)', padding: '4px 10px', borderRadius: '999px', border: '1px solid rgba(99,102,241,0.3)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', transition: 'all 0.2s' }}>
+                                    🌐 {selectedLanguage || detectedLanguage}
+                                    {isTranslating && <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} />}
+                                </button>
+                                
+                                {showDropdown && (
+                                    <div style={{ position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', background: 'rgba(15, 15, 25, 0.95)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '0.5rem', zIndex: 50, display: 'flex', flexDirection: 'column', gap: '4px', minWidth: '150px', maxHeight: '200px', overflowY: 'auto', boxShadow: '0 10px 25px rgba(0,0,0,0.5)' }} className="lang-dropdown">
+                                        {['ENGLISH', 'HINDI', 'TAMIL', 'MARATHI', 'SPANISH', 'FRENCH', 'GERMAN', 'CHINESE', 'ARABIC', 'JAPANESE'].map(lang => (
+                                            <button 
+                                                key={lang}
+                                                onClick={() => handleLanguageSelect(lang)}
+                                                className={`lang-item ${selectedLanguage === lang ? 'lang-active' : ''}`}
+                                            >
+                                                {lang}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         )}
                         <span style={{ fontSize: '0.875rem', color: 'var(--text-muted)', background: 'rgba(255,255,255,0.05)', padding: '4px 12px', borderRadius: '999px' }}>
                             {wordCount} words
@@ -285,6 +356,11 @@ const ApplicationArea = () => {
 
       <style>{`
         @keyframes spin { 100% { transform: rotate(360deg); } }
+        .lang-item { background: transparent; border: none; color: rgba(255,255,255,0.8); padding: 6px 12px; text-align: left; font-size: 0.85rem; cursor: pointer; border-radius: 6px; transition: all 0.2s; width: 100%; font-family: inherit; }
+        .lang-item:hover { background: rgba(255,255,255,0.1); color: white; }
+        .lang-active { color: var(--primary) !important; font-weight: 600 !important; background: rgba(99,102,241,0.15) !important; }
+        .lang-dropdown::-webkit-scrollbar { width: 4px; }
+        .lang-dropdown::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
       `}</style>
     </section>
   );
