@@ -1,7 +1,9 @@
 <p align="center">
+  🚀
   <a href="https://speech-to-text-ai-seven.vercel.app/">
-    <img src="https://img.shields.io/badge/🚀 Live-Demo-Nexus_Speech_AI-000?style=for-the-badge&logo=vercel">
+    <img src="https://img.shields.io/badge/Live%20Demo-Click%20Here-000?style=for-the-badge&logo=vercel&logoColor=white">
   </a>
+</p>
    
 </p># 🎙️ Nexus Speech AI  
 ### A Premium, Blazing-Fast, Multi-Lingual Speech-to-Text Intelligence Engine
