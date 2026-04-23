@@ -1,8 +1,20 @@
-# 🎙️ Nexus Speech AI  
+<p align="center">
+  <a href="https://speech-to-text-ai-seven.vercel.app/">
+    <img src="https://img.shields.io/badge/🚀 Live-Demo-Nexus_Speech_AI-000?style=for-the-badge&logo=vercel">
+  </a>
+   
+</p># 🎙️ Nexus Speech AI  
 ### A Premium, Blazing-Fast, Multi-Lingual Speech-to-Text Intelligence Engine
 
 > **Nexus is not just another transcription tool.**  
 > It is a high-performance, edge-designed web application that transforms spoken words into actionable intelligence with unparalleled accuracy, speed, and aesthetic fluidity.
+
+---
+
+## 🌐 Live Demo
+
+🚀 **Experience Nexus in real-time:**  
+👉 https://speech-to-text-ai-seven.vercel.app/
 
 ---
 
